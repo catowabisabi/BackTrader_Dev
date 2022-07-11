@@ -1,6 +1,6 @@
 import backtrader as bt
 
-class TestStrategy(bt.Strategy):
+class Sma_Cross(bt.SignalStrategy):
 
     # 照抄就OK
     def log(self, txt, dt=None):
@@ -13,17 +13,11 @@ class TestStrategy(bt.Strategy):
 
     # 呢個要改 - 只係行一次
     def __init__(self):
-        # Keep a reference to the "close" line in the data[0] dataseries
-        # 呢度係一開始要初始化既參數, 就呢個策略而言, 成個策略只需要拎到收巿價就OK,
-        # 所以呢度只需要拎close
-        self.dataclose = self.datas[0].close
-
-        # To keep track of pending orders and buy price/commission
-        # 呢度之後會變, 但由於會用到呢D參數, 所以一開始都要初始化左先
-        # 如果你既策略有唔同既參數要用, 記得要加返係度
-        self.order = None
-        self.buyprice = None
-        self.buycomm = None
+        # 內建的指標, 如有需要可以自己去官網看, 修改
+        sma = bt.ind.SMA(period = 50)
+        price = self.data
+        crossover = bt.ind.CrossOver(price, sma)
+        self.signal_add(bt.SIGNAL_LONG, crossover)
 
 #=====================策略初始化 完結==================================
 
@@ -73,51 +67,51 @@ class TestStrategy(bt.Strategy):
         if not trade.isclosed:
             return
 
-        self.log('平倉利潤, GROSS %.2f, NET %.2f' %
+        self.log('平倉利潤, GROSS %.2f, NET %.2f\n\n' %
                  (trade.pnl, trade.pnlcomm))
 
 
 #=====================策略內容 開始==================================
 
 
-    # 每一支K線開始就會行一次呢行野
-    def next(self):
-        # Simply log the closing price of the series from the reference
-        self.log('K線收巿價, %.2f' % self.dataclose[0])
+#     # 每一支K線開始就會行一次呢行野
+#     def next(self):
+#         # Simply log the closing price of the series from the reference
+#         self.log('K線收巿價, %.2f' % self.dataclose[0])
 
-        # Check if an order is pending ... if yes, we cannot send a 2nd one
-        # 如果本身有order係落緊未完成交易, 就唔買
-        if self.order:
-            return
+#         # Check if an order is pending ... if yes, we cannot send a 2nd one
+#         # 如果本身有order係落緊未完成交易, 就唔買
+#         if self.order:
+#             return
 
-        # Check if we are in the market
-        # 如果我地本身無野買左係手
-        if not self.position:
+#         # Check if we are in the market
+#         # 如果我地本身無野買左係手
+#         if not self.position:
 
-            # Not yet ... we MIGHT BUY if ...
-            # 呢個策略係連升兩日, 今日高過琴日, 琴日又高過前日
-            if self.dataclose[0] < self.dataclose[-1]:
-                    # current close less than previous close
+#             # Not yet ... we MIGHT BUY if ...
+#             # 呢個策略係連升兩日, 今日高過琴日, 琴日又高過前日
+#             if self.dataclose[0] < self.dataclose[-1]:
+#                     # current close less than previous close
 
-                    if self.dataclose[-1] < self.dataclose[-2]:
-                        # previous close less than the previous close
+#                     if self.dataclose[-1] < self.dataclose[-2]:
+#                         # previous close less than the previous close
 
-                        # BUY, BUY, BUY!!! (with default parameters)
-                        self.log('發出買入訂單, %.2f' % self.dataclose[0])
+#                         # BUY, BUY, BUY!!! (with default parameters)
+#                         self.log('發出買入訂單, %.2f' % self.dataclose[0])
 
-                        # Keep track of the created order to avoid a 2nd order
-                        self.order = self.buy()
+#                         # Keep track of the created order to avoid a 2nd order
+#                         self.order = self.buy()
 
-        else: # 如果有野係手
+#         else: # 如果有野係手
 
-            # Already in the market ... we might sell
-            # 如果拎住左5枝K就賣
-            if len(self) >= (self.bar_executed + 5):
+#             # Already in the market ... we might sell
+#             # 如果拎住左5枝K就賣
+#             if len(self) >= (self.bar_executed + 5):
         
-                # SELL, SELL, SELL!!! (with all possible default parameters)
-                self.log('發出賣出訂單, %.2f' % self.dataclose[0])
+#                 # SELL, SELL, SELL!!! (with all possible default parameters)
+#                 self.log('發出賣出訂單, %.2f' % self.dataclose[0])
 
-                # Keep track of the created order to avoid a 2nd order
-                self.order = self.sell()
+#                 # Keep track of the created order to avoid a 2nd order
+#                 self.order = self.sell()
 
-#=====================策略內容 完結==================================
+# #=====================策略內容 完結==================================
