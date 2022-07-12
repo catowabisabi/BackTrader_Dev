@@ -1,9 +1,7 @@
 import backtrader as bt
-import datetime
 import yfinance as yf
 from stock_config import *
 from strategies import BuyHold
-import pandas as pd
 
 
 
