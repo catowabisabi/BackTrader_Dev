@@ -1,0 +1,660 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © wielkieef
+
+//@version=4
+
+// Hello, if u reading this you probably bought my source code
+// first of all thank u very much for helping me improving my coding skills
+// I'm not kind of person who want everything for myself, I want to share my product with people,
+// the problem is with comparing good stuff with insane good stuff, that's why I got premium bots projects
+// My premium bots for a specific clients, product are really expensive, but on the other hand
+// This product allows u to earn even more 
+// One of my subscriber got all cashback from buying this source-code within 2-3month
+// so yeah, I think this work is worth this price
+// Also here it is new version of my bot,
+// I hope you guys will be all happy and satisfed using this, if not let me know what u want to change
+// if u need any info let me know on my discord: joniasty#1720
+
+// I wish u all best
+// it's only money and we often forget about it while chasing greater profits when things are really bad somewhere in the world
+
+// Overall Thank u for stay with me longer
+
+
+
+
+// -Filip K.
+
+
+strategy("PREMIUM BITCOIN [60MIN] V2.", overlay = true, pyramiding=1,initial_capital = 1000, default_qty_type= strategy.percent_of_equity, default_qty_value = 75, calc_on_order_fills=false, slippage=0,commission_type=strategy.commission.percent,commission_value=0.03)
+
+//SOURCE =============================================================================================================================================================================================================================================================================================================
+
+src                 =                   input(open)
+
+// POSITION ==========================================================================================================================================================================================================================================================================================================
+
+Position            =                   input("Both",                           title= "Longs / Shorts",                                    options = ["Both","Longs","Shorts"])
+
+is_Long             =                   Position                                                    == "SHORT" ? na : true
+is_Short            =                   Position                                                    == "LONG" ? na : true
+
+// Indicators Inputs ========================================================================================================================================================================================================================================================================================================
+
+
+//ADX --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ADX_options         =                   input("MASANAKAMURA",                   title="ADX OPTION",                                       options = ["CLASSIC", "MASANAKAMURA"],                                          group = "ADX")
+ADX_len             =                   input(15,                               title="ADX LENGTH",                                       type = input.integer, minval = 1,                                               group = "ADX")
+th                  =                   input(14,                               title="ADX THRESHOLD",                                    type = input.float, minval = 0, step = 0.5,                                     group = "ADX")
+
+// Range Filter ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+per_                =                   input(51,                               title="SAMPLING PERIOD",                                  minval=1,                                                                       group = "Range Filter")
+mult                =                   input(1.4,                              title="RANGE MULTIPLIER",                                   minval=0.1, step = 0.1,                                                         group = "Range Filter")
+
+// Volume ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+volume_f            =                   input(1.2,                              title="Volume mult.",                                       minval = 0, step = 0.1,                                                         group="Volume")
+sma_length          =                   input(26,                               title="Volume lenght",                                      minval = 1,                                                                     group="Volume")
+volume_f_B          =                   input(2.2,                              title="Volume mult. Breakouts",                                       minval = 0, step = 0.1,                                                         group="Volume")
+sma_length_B        =                   input(26,                               title="Volume lenght Breakouts",                                      minval = 1,                                                                     group="Volume")
+
+//MACD----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+fast_length         =                   input(9,                                title="Fast Length",                                        type=input.integer,                                                             group="MACD")
+slow_length         =                   input(13,                                title="Slow Length",                                        type=input.integer,                                                             group="MACD")
+signal_length       =                   input(19,                               title="Signal Smoothing",                                   type=input.integer,                                                             group="MACD")
+
+//SAR----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sst                 =                   input (0.5,                             title="Sar Start",                                          step=0.01, minval = 0.01,                                                       group="SAR")
+Sinc                =                   input (0.2,                             title="Sar Int",                                            step=0.01, minval = 0.01,                                                       group="SAR")
+Smax                =                   input (0.3,                             title="Sar Max",                                            step=0.01, minval = 0.01,                                                       group="SAR")
+
+// Cloud --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+len                 =                   input(25,                               title="Cloud Length",                                                                                                                       group="Cloud")
+
+//RSI----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+len_3               =                   input(24,                               title="RSI Lenght",                                                                                                                         group = "Relative Strenght Indeks")
+src_3               =                   input(open,                             title="RSI Source",                                                                                                                         group = "Relative Strenght Indeks")
+
+// General Conditions Inputs ========================================================================================================================================================================================================================================================================================================
+
+// Support and Resistance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+left                =                   input(6,                                title="Left",                                                                                                                               group="Support and Resistance")
+right               =                   input(8,                                title="Right",                                                                                                                              group="Support and Resistance")
+
+//BOLINGER BANDS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+tf2                 =                   input("",                               title= "Timeframe 2",                                       type = input.resolution,                                                        group="Bolinger Bands")
+src2                =                   input(high,                             title= "Source 2",                                          type = input.source,                                                            group="Bolinger Bands")
+
+//Scalpng ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ACT_SCLP            =                   input(true,                             title="SCALPING",                                         type = input.bool,                                                              group="Scalping")
+HiLoLen             =                   input(12,                               title="Scalping Lenght",                                    minval=2,                                                                       group="Scalping")
+fastEMAlength       =                   input(10,                               title="Fast EMA lenght",                                    minval=2,                                                                       group="Scalping")
+mediumEMAlength     =                   input(120,                              title="Medium EMA lenght",                                  minval=2,                                                                       group="Scalping")
+slowEMAlength       =                   input(500,                              title="Slow EMA lenght",                                    minval=2,                                                                       group="Scalping")
+filterBW            =                   input(false,                            title="Filter")
+Lookback            =                   input(5,                                title="Pullback Lookback")
+UseHAcandles        =                   input(true,                             title="Use H.A Calculations")
+
+//RMI ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+RMI_len             =                   input(26,                               title="Rmi Lenght",                                     type=input.integer, minval = 1,                                                     group="Relative Momentum Index")
+mom                 =                   input(29,                               title="Rmi Momentum",                                   type=input.integer, minval = 1,                                                     group="Relative Momentum Index")
+RMI_os              =                   input(31,                               title="Rmi overbought",                                 type=input.integer, minval = 0,                                                     group="Relative Momentum Index")
+RMI_ob              =                   input(63,                               title="Rmi overbought",                                 type=input.integer, minval = 0,                                                     group="Relative Momentum Index")
+
+// ATR -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+prd                     =                                                       input(12, title="PP period")
+Factor                  =                                                       input(7, title = "ATR Factor")
+Pd                      =                                                       input(2, title = "ATR Period")
+
+// Indicators Calculations ========================================================================================================================================================================================================================================================================================================
+
+//ADX-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+calcADX(_len) =>
+    up              =                                                                                                                       change(high)
+	down            =                                                                                                                      -change(low)
+	plusDM          =                                                                                                                       na(up)   ? na : (up > down and up > 0   ? up   : 0)
+    minusDM         =                                                                                                                       na(down) ? na : (down > up and down > 0 ? down : 0)
+	truerange       =                                                                                                                       rma(tr, _len)
+	_plus           =                                                                                                                       fixnan(100 * rma(plusDM, _len)  / truerange)
+	_minus          =                                                                                                                       fixnan(100 * rma(minusDM, _len) / truerange)
+	sum             =                                                                                                                       _plus + _minus
+	_adx            =                                                                                                                       100 * rma(abs(_plus - _minus) / (sum == 0 ? 1 : sum), _len)
+    [_plus,_minus,_adx]
+calcADX_Masanakamura(_len) =>
+    SmoothedTrueRange                   =                                                                                                   0.0
+    SmoothedDirectionalMovementPlus     =                                                                                                   0.0
+    SmoothedDirectionalMovementMinus    =                                                                                                   0.0
+    TrueRange                           =                                                                                                   max(max(high - low, abs(high - nz(close[1]))), abs(low - nz(close[1])))
+    DirectionalMovementPlus             =                                                                                                   high - nz(high[1]) > nz(low[1]) - low ? max(high - nz(high[1]), 0) : 0
+    DirectionalMovementMinus            =                                                                                                   nz(low[1]) - low > high - nz(high[1]) ? max(nz(low[1]) - low, 0)   : 0
+    SmoothedTrueRange                   :=                                                                                                  nz(SmoothedTrueRange[1]) - (nz(SmoothedTrueRange[1]) /_len) + TrueRange
+    SmoothedDirectionalMovementPlus     :=                                                                                                  nz(SmoothedDirectionalMovementPlus[1])  - (nz(SmoothedDirectionalMovementPlus[1])  / _len) + DirectionalMovementPlus
+    SmoothedDirectionalMovementMinus    :=                                                                                                  nz(SmoothedDirectionalMovementMinus[1]) - (nz(SmoothedDirectionalMovementMinus[1]) / _len) + DirectionalMovementMinus
+    DIP                                 =                                                                                                   SmoothedDirectionalMovementPlus  / SmoothedTrueRange * 100
+    DIM                                 =                                                                                                   SmoothedDirectionalMovementMinus / SmoothedTrueRange * 100
+    DX                                  =                                                                                                   abs(DIP-DIM) / (DIP+DIM)*100
+    adx                                 =                                                                                                   sma(DX, _len)
+    [DIP,DIM,adx]
+[DIPlusC,DIMinusC,ADXC] =                                                                                                                   calcADX(ADX_len) 
+[DIPlusM,DIMinusM,ADXM] =                                                                                                                   calcADX_Masanakamura(ADX_len)
+
+DIPlus                  =                                                                                                                   ADX_options == "CLASSIC" ? DIPlusC    : DIPlusM
+DIMinus                 =                                                                                                                   ADX_options == "CLASSIC" ? DIMinusC   : DIMinusM
+ADX                     =                                                                                                                   ADX_options == "CLASSIC" ? ADXC       : ADXM
+L_adx                   =                                                       DIPlus > DIMinus and ADX > th
+S_adx                   =                                                       DIPlus < DIMinus and ADX > th
+
+// Range Filter ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+var bool L_RF = na,  var bool S_RF = na
+
+Range_filter(_src, _per_, _mult)=>
+    var float _upward   =                                                                                                                   0.0
+    var float _downward =                                                                                                                   0.0
+    wper                =                                                                                                                   (_per_*2) - 1
+    avrng               =                                                                                                                   ema(abs(_src - _src[1]), _per_)
+    _smoothrng          =                                                                                                                   ema(avrng, wper)*_mult
+    _filt               =                                                                                                                   _src
+    _filt               :=                                                                                                                  _src > nz(_filt[1]) ? ((_src-_smoothrng) < nz(_filt[1]) ? nz(_filt[1]) : (_src-_smoothrng)) : ((_src+_smoothrng) > nz(_filt[1]) ? nz(_filt[1]) : (_src+_smoothrng))
+    _upward             :=                                                                                                                  _filt > _filt[1] ? nz(_upward[1]) + 1 : _filt < _filt[1] ? 0 : nz(_upward[1])
+    _downward           :=                                                                                                                  _filt < _filt[1] ? nz(_downward[1]) + 1 : _filt > _filt[1] ? 0 : nz(_downward[1])
+    [_smoothrng,_filt,_upward,_downward]
+[smoothrng, filt, upward, downward] = Range_filter(src, per_, mult)
+hband                   =                                                                                                                   filt + smoothrng
+lband                   =                                                                                                                   filt - smoothrng
+L_RF                    :=                                                      high > hband and upward > 0
+S_RF                    :=                                                      low < lband and downward > 0
+
+// Volume -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Volume_condt            =                                                       volume > sma(volume,sma_length)*volume_f
+Volume_Breakouts_condt  =                                                       volume > sma(volume,sma_length_B)*volume_f_B
+
+//MACD-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+fast_ma                 =                                                                                                                               ema(src, fast_length)
+slow_ma                 =                                                                                                                               ema(src, slow_length)
+macd                    =                                                                                                                               fast_ma - slow_ma
+signal_                 =                                                                                                                               sma(macd, signal_length)
+L_macd                  =                                                       macd > signal_ 
+S_macd                  =                                                       macd < signal_ 
+
+//SAR------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SAR                     =                                                                                                                   sar(Sst, Sinc, Smax)
+L_sar                   =                                                       (SAR < close)
+S_sar                   =                                                       (SAR > close)
+
+//Cloud --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+PI =                                                                                                                                        2 * asin(1)
+hilbertTransform(src) =>
+    0.0962 * src + 0.5769 * nz(src[2]) - 0.5769 * nz(src[4]) - 0.0962 * nz(src[6])
+computeComponent(src, mesaPeriodMult) =>
+    hilbertTransform(src) * mesaPeriodMult
+computeAlpha(src, fastLimit, slowLimit) =>
+    mesaPeriod =                                                                                                                            0.0
+    mesaPeriodMult =                                                                                                                        0.075 * nz(mesaPeriod[1]) + 0.54
+    smooth =                                                                                                                                0.0
+    smooth :=                                                                                                                               (4 * src + 3 * nz(src[1]) + 2 * nz(src[2]) + nz(src[3])) / 10
+    detrender   =                                                                                                                           0.0
+    detrender   :=                                                                                                                          computeComponent(smooth, mesaPeriodMult)
+    I1 =                                                                                                                                    nz(detrender[3])
+    Q1 =                                                                                                                                    computeComponent(detrender, mesaPeriodMult)
+    jI =                                                                                                                                    computeComponent(I1, mesaPeriodMult)
+    jQ =                                                                                                                                    computeComponent(Q1, mesaPeriodMult)
+    I2 = 0.0
+    Q2 = 0.0
+    I2 := I1 - jQ
+    Q2 := Q1 + jI
+    I2 := 0.2 * I2 + 0.8 *                                                                                                                  nz(I2[1])
+    Q2 := 0.2 * Q2 + 0.8 *                                                                                                                  nz(Q2[1])
+    Re = I2 * nz(I2[1]) + Q2 *                                                                                                              nz(Q2[1])
+    Im = I2 * nz(Q2[1]) - Q2 *                                                                                                              nz(I2[1])
+    Re := 0.2 * Re + 0.8 *                                                                                                                  nz(Re[1])
+    Im := 0.2 * Im + 0.8 *                                                                                                                  nz(Im[1])
+    if Re != 0 and Im != 0
+        mesaPeriod := 2 *                                                                                                                   PI / atan(Im / Re)
+    if mesaPeriod > 1.5 *                                                                                                                   nz(mesaPeriod[1])
+        mesaPeriod := 1.5 *                                                                                                                 nz(mesaPeriod[1])
+    if mesaPeriod < 0.67 *                                                                                                                  nz(mesaPeriod[1])
+        mesaPeriod := 0.67 *                                                                                                                nz(mesaPeriod[1])
+    if mesaPeriod < 6
+        mesaPeriod := 6
+    if mesaPeriod > 50
+        mesaPeriod := 50
+    mesaPeriod := 0.2 * mesaPeriod + 0.8 *                                                                                                  nz(mesaPeriod[1])
+    phase = 0.0
+    if I1 != 0
+        phase := (180 / PI) *                                                                                                               atan(Q1 / I1)
+    deltaPhase      =                                                                                                                       nz(phase[1]) - phase
+    if  deltaPhase  < 1
+        deltaPhase  := 1
+    alpha           = fastLimit / deltaPhase
+    if  alpha < slowLimit
+        alpha       := slowLimit
+    [alpha,alpha/2.0]
+er                  =                                                                                                                       abs(change(src,len)) / sum(abs(change(src)),len)
+[a,b]               =                                                                                                                       computeAlpha(src, er, er*0.1)
+mama                =                                                                                                                       0.0
+mama                :=                                                                                                                      a * src + (1 - a) * nz(mama[1])
+fama                =                                                                                                                       0.0
+fama                :=                                                                                                                      b * mama + (1 - b) * nz(fama[1])
+alpha               =                                                                                                                       pow((er * (b - a)) + a, 2)
+kama                =                                                                                                                       0.0
+kama                :=                                                                                                                      alpha * src + (1 - alpha) * nz(kama[1])
+
+L_cloud             =                                                           kama > kama[1]
+S_cloud             =                                                           kama < kama[1]
+
+//RSI------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+up_3                    =                                                                                                                   rma(max(change(src_3), 0), len_3)
+down_3                  =                                                                                                                   rma(-min(change(src_3), 0), len_3)
+rsi_3                   =                                                                                                                   down_3 == 0 ? 100 : up_3 == 0 ? 0 : 100 - (100 / (1 + up_3 / down_3))
+L_rsi                   =                                                       (rsi_3 < 70)
+S_rsi                   =                                                       (rsi_3 > 30) 
+
+// Support and Resistance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+hih                 =                                                                                                                       pivothigh(high, left, right)
+lol                 =                                                                                                                       pivotlow (low , left, right)
+
+top                 =                                                                                                                       valuewhen(hih, high[right], 0)
+bot                 =                                                                                                                       valuewhen(lol, low [right], 0)
+
+RS_Long_condt       =                                                           close > top
+RS_Short_condt      =                                                           close < bot
+
+L_cross             =                                                           crossover(close, top)
+S_cross             =                                                           crossunder(close,bot)
+
+// BOLINGER BADNS -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+per2                                        =                                                                                                                                                           10
+dev2                                        =                                                                                                                                                           2.0
+ma2                                         =                                                                                                                                                           security(syminfo.tickerid, tf2, sma(src2, per2))
+
+hb2                                         =                                                                                                                                                           ma2 + security(syminfo.tickerid, tf2, stdev(src2, per2)) * dev2
+lb2                                         =                                                                                                                                                           ma2 - security(syminfo.tickerid, tf2, stdev(src2, per2)) * dev2
+
+L_BB_2 = close > hb2
+S_BB_2 = close > lb2
+
+//Scalpng ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+haClose             =                   UseHAcandles                        ?                                                               security(heikinashi(syminfo.tickerid), timeframe.period, close) : close
+haOpen              =                   UseHAcandles                        ?                                                               security(heikinashi(syminfo.tickerid), timeframe.period, open) : open
+haHigh              =                   UseHAcandles                        ?                                                               security(heikinashi(syminfo.tickerid), timeframe.period, high) : high
+haLow               =                   UseHAcandles                        ?                                                               security(heikinashi(syminfo.tickerid), timeframe.period, low) : low
+isRegularFractal(mode) =>
+    ret = mode == 1 ? high[4] < high[3] and high[3] < high[2] and high[2] > high[1] and 
+       high[1] > high[0] : mode == -1 ? 
+       low[4] > low[3] and low[3] > low[2] and low[2] < low[1] and low[1] < low[0] : 
+       false
+    ret
+isBWFractal(mode) =>
+    ret = mode == 1 ? high[4] < high[2] and high[3] <= high[2] and high[2] >= high[1] and 
+       high[2] > high[0] : mode == -1 ? 
+       low[4] > low[2] and low[3] >= low[2] and low[2] <= low[1] and low[2] < low[0] : 
+       false
+    ret
+fastEMA             =                                                                                                                       ema(haClose, fastEMAlength)
+mediumEMA           =                                                                                                                       ema(haClose, mediumEMAlength)
+slowEMA             =                                                                                                                       ema(haClose, slowEMAlength)
+pacC                =                                                                                                                       ema(haClose, HiLoLen)
+pacL                =                                                                                                                       ema(haLow, HiLoLen)
+pacU                =                                                                                                                       ema(haHigh, HiLoLen)
+TrendDirection      = fastEMA > mediumEMA and pacL > mediumEMA ? 1 : 
+   fastEMA < mediumEMA and pacU < mediumEMA ? -1 : 0
+filteredtopf        =                                                                                                                       filterBW ? isRegularFractal(1) : isBWFractal(1)
+filteredbotf        =                                                                                                                       filterBW ? isRegularFractal(-1) : isBWFractal(-1)
+valuewhen_H0        =                                                                                                                       valuewhen(filteredtopf == true, high[2], 0)
+valuewhen_H1        =                                                                                                                       valuewhen(filteredtopf == true, high[2], 1)
+valuewhen_H2        =                                                                                                                       valuewhen(filteredtopf == true, high[2], 2)
+higherhigh          =                                                                                                                       filteredtopf == false ? false : 
+   valuewhen_H1 < valuewhen_H0 and valuewhen_H2 < valuewhen_H0
+lowerhigh = filteredtopf == false ? false : 
+   valuewhen_H1 > valuewhen_H0 and valuewhen_H2 > valuewhen_H0
+valuewhen_L0        =                                                                                                                       valuewhen(filteredbotf == true, low[2], 0)
+valuewhen_L1        =                                                                                                                       valuewhen(filteredbotf == true, low[2], 1)
+valuewhen_L2        =                                                                                                                       valuewhen(filteredbotf == true, low[2], 2)
+higherlow = filteredbotf == false ? false : 
+   valuewhen_L1 < valuewhen_L0 and valuewhen_L2 < valuewhen_L0
+lowerlow = filteredbotf == false ? false : 
+   valuewhen_L1 > valuewhen_L0 and valuewhen_L2 > valuewhen_L0
+TradeDirection = 0
+TradeDirection := nz(TradeDirection[1])
+pacExitU = haOpen < pacU and haClose > pacU and barssince(haClose<pacC)<=Lookback
+pacExitL = haOpen > pacL and haClose < pacL and barssince(haClose>pacC)<=Lookback
+Buy      = TrendDirection == 1        and pacExitU
+Sell     = TrendDirection == -1       and pacExitL
+TradeDirection := TradeDirection == 1 and haClose<pacC ? 0 : 
+   TradeDirection == -1               and haClose>pacC ? 0 : 
+   TradeDirection == 0                and Buy ? 1 : 
+   TradeDirection == 0                and Sell ? -1 : TradeDirection
+L_scalp             =                                                           nz(TradeDirection[1]) == 0 and TradeDirection == 1
+S_scalp             =                                                           nz(TradeDirection[1]) == 0 and TradeDirection == -1
+
+// RMI -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+RMI(len, m)=>
+    up              =                                                                                                                       ema(max(close - close[m],0), len)
+    dn              =                                                                                                                       ema(max(close[m] - close,0), len)
+    RMI             =                                                                                                                       dn == 0 ? 0 : 100 - 100 / (1 + up / dn)
+    RMI
+L_rmi               =                                                           crossover(RMI(RMI_len, mom), RMI_os)
+S_rmi               =                                                           crossunder(RMI(RMI_len, mom), RMI_ob)
+
+// ATR -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+float ph = pivothigh(prd, prd)
+float pl = pivotlow(prd, prd)
+var float center = na
+float lastpp = ph ? ph : pl ? pl : na
+if lastpp
+    if na(center)
+        center := lastpp
+    else
+        
+        center := (center * 2 + lastpp) / 3
+
+Up = center - (Factor * atr(Pd))
+Dn = center + (Factor * atr(Pd))
+
+float TUp = na
+float TDown = na
+Trend = 0
+TUp := close[1] > TUp[1] ? max(Up, TUp[1]) : Up
+TDown := close[1] < TDown[1] ? min(Dn, TDown[1]) : Dn
+Trend := close > TDown[1] ? 1: close < TUp[1]? -1: nz(Trend[1], 1)
+Trailingsl = Trend == 1 ? TUp : TDown
+
+bsignal = Trend == 1 and Trend[1] == -1
+ssignal = Trend == -1 and Trend[1] == 1
+
+L_ATR = Trend == 1
+S_ATR = Trend == -1
+
+//L/S variables----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+var bool longCond                    = na, var bool shortCond                   = na, longCond := nz(longCond[1]), shortCond := nz(shortCond[1])
+var int CondIni_long                 = 0, var int CondIni_short                 = 0, CondIni_long := nz(CondIni_long[1]), CondIni_short := nz(CondIni_short[1])
+var bool Final_longCondition         = na, var bool Final_shortCondition        = na, Final_longCondition := nz(Final_longCondition[1]), Final_shortCondition := nz(Final_shortCondition[1])
+var bool BT_Final_longCondition      = na, var bool BT_Final_shortCondition     = na, BT_Final_longCondition := nz(BT_Final_longCondition[1]), BT_Final_shortCondition := nz(BT_Final_shortCondition[1])
+var float last_open_longCondition    = na, var float last_open_shortCondition   = na
+var int last_longCondition           = na, var int last_shortCondition          = na
+var int nLongs = na, var int nShorts = na, nLongs := nz(nLongs[1]), nShorts     := nz(nShorts[1])
+
+//STRATEGY ==========================================================================================================================================================================================================================================================================================================
+
+
+L_Breakout_Condt =                                                              RS_Long_condt   and Volume_Breakouts_condt    and L_RF  
+S_Breakout_Condt =                                                              RS_Short_condt  and Volume_Breakouts_condt    and S_RF  
+
+L_Basic_Condt   =                                                               L_adx and L_cloud and L_sar and L_macd and L_RF and L_rsi and  Volume_condt 
+S_Basic_Condt   =                                                               S_adx and S_cloud and S_sar and S_macd and S_RF and S_rsi and  Volume_condt 
+
+L_Bollinger_Condt =                                                             L_BB_2 and L_adx and L_cloud and L_rsi  and  Volume_condt and L_ATR
+S_Bollinger_Condt =                                                             S_BB_2 and S_adx and S_cloud and S_rsi  and  Volume_condt and S_ATR
+
+L_Scalp_Condt    =                                                              L_scalp and L_adx and L_RF and L_sar 
+S_Scalp_Condt    =                                                              S_scalp and S_adx and S_RF and S_sar 
+
+L_RMI_Condt     =                                                               L_rmi and L_adx and L_RF and L_rsi 
+S_RMI_Condt     =                                                               S_rmi and S_adx and S_RF and S_rsi 
+
+Final_Long_Condt =                                                              L_Breakout_Condt or L_Basic_Condt or L_Bollinger_Condt or L_Scalp_Condt or L_RMI_Condt
+Final_Short_Condt =                                                             S_Breakout_Condt or S_Basic_Condt or S_Bollinger_Condt or S_Scalp_Condt or S_RMI_Condt
+
+longCond        :=                                                              Final_Long_Condt
+shortCond       :=                                                              Final_Short_Condt
+
+CondIni_long    :=                                                              longCond[1] ? 1 : shortCond[1] ? -1 : nz(CondIni_long[1])
+CondIni_short   :=                                                              longCond[1] ? 1 : shortCond[1] ? -1 : nz(CondIni_short[1])
+longCondition   =                                                               (longCond[1] and nz(CondIni_long[1]) == -1)
+shortCondition  =                                                               (shortCond[1] and nz(CondIni_short[1]) == 1)
+
+// Price position----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+var int last_long_sl = na, var int last_short_sl = na
+last_open_longCondition             :=                                          longCondition ? close[1] :                                                      nz(last_open_longCondition[1])
+last_open_shortCondition            :=                                          shortCondition ? close[1] :                                                     nz(last_open_shortCondition[1])
+last_longCondition                  :=                                          longCondition ? time :                                                          nz(last_longCondition[1])
+last_shortCondition                 :=                                          shortCondition ? time :                                                         nz(last_shortCondition[1])
+in_longCondition                    =                                           last_longCondition > last_shortCondition
+in_shortCondition                   =                                           last_shortCondition > last_longCondition
+
+if longCondition
+    nLongs                          :=                                          nLongs + 1
+    nShorts                         :=                                          na
+    
+if shortCondition
+    nLongs                          :=                                          na
+    nShorts                         :=                                          nShorts + 1
+
+Final_longCondition                 := is_Long          and longCondition
+Final_shortCondition                := is_Short         and shortCondition
+
+//TP_1 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+tp                      = input(0.9, "TP-1 [%]",                     type    = input.float, step = 0.1, group="Backtesting") 
+var bool long_tp        = na, var bool short_tp                                     = na
+var int last_long_tp    = na, var int last_short_tp                                 = na
+var bool Final_Long_tp  = na, var bool Final_Short_tp                               = na, Final_Long_tp := nz(Final_Long_tp[1]), Final_Short_tp := nz(Final_Short_tp[1])
+long_tp                 := (is_Long and high > (last_open_longCondition*(1+(tp/100))) and  in_longCondition)
+short_tp                := (is_Short and low < (last_open_shortCondition*(1-(tp/100))) and  in_shortCondition)
+last_long_tp            := long_tp ? time : nz(last_long_tp[1])
+last_short_tp           := short_tp ? time : nz(last_short_tp[1])
+Final_Long_tp           := (long_tp and last_longCondition > nz(last_long_tp[1]) and last_longCondition > nz(last_long_sl[1]))
+Final_Short_tp          := (short_tp and last_shortCondition > nz(last_short_tp[1]) and last_shortCondition > nz(last_short_sl[1]))
+l_1_h = iff(Final_Long_tp, last_open_longCondition*(1+(tp/100)), na),
+s_1_h = iff(Final_Short_tp, last_open_shortCondition*(1-(tp/100)), na)
+
+//TP_2 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+tp2                     = input(1.7, "TP-2 [%]",                     type    = input.float, step = 0.1) 
+var bool long_tp2       = na, var bool short_tp2                                    = na
+var int last_long_tp2   = na, var int last_short_tp2                                = na
+var bool Final_Long_tp2 = na, var bool Final_Short_tp2                              = na, Final_Long_tp2 := nz(Final_Long_tp2[1]), Final_Short_tp2 := nz(Final_Short_tp2[1])
+long_tp2                := ( is_Long and high > (last_open_longCondition*(1+(tp2/100))) and  in_longCondition)
+short_tp2               := ( is_Short and low < (last_open_shortCondition*(1-(tp2/100))) and  in_shortCondition)
+last_long_tp2           := long_tp2 ? time : nz(last_long_tp2[1])
+last_short_tp2          := short_tp2 ? time : nz(last_short_tp2[1])
+Final_Long_tp2          := (long_tp2 and last_longCondition > nz(last_long_tp2[1]) and last_longCondition > nz(last_long_sl[1]))
+Final_Short_tp2         := (short_tp2 and last_shortCondition > nz(last_short_tp2[1]) and last_shortCondition > nz(last_short_sl[1]))
+l_2_h = iff(Final_Long_tp2, last_open_longCondition*(1+(tp2/100)), na)
+s_2_h = iff(Final_Short_tp2, last_open_shortCondition*(1-(tp2/100)), na),
+
+// SL ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+sl                      = input(6.1, "SL [%]",                      type    = input.float, step = 0.1)
+var int CondIni_long_sl = 0, var int CondIni_short_sl                               = 0
+var bool Final_Long_sl0 = na, var bool Final_Short_sl0                              = na, Final_Long_sl0 := nz(Final_Long_sl0[1]), Final_Short_sl0 := nz(Final_Short_sl0[1])
+var bool Final_Long_sl  = na, var bool Final_Short_sl                               = na, Final_Long_sl := nz(Final_Long_sl[1]), Final_Short_sl := nz(Final_Short_sl[1])
+long_sl                 =  is_Long and low <= ((1-(sl/100))*last_open_longCondition) and not (open < ((1-(sl/100))*last_open_longCondition)) 
+short_sl                =  is_Short and high >= ((1+(sl/100))*last_open_shortCondition) and not (open > ((1+(sl/100))*last_open_shortCondition))
+Final_Long_sl0          := Position == "BOTH" ? long_sl and nz(CondIni_long_sl[1]) == -1 and not Final_Long_tp and not shortCondition  : long_sl and nz(CondIni_long_sl[1]) == -1 and not Final_Long_tp
+Final_Short_sl0         := Position == "BOTH" ? short_sl and nz(CondIni_short_sl[1]) == -1 and not Final_Short_tp and not longCondition  : short_sl and nz(CondIni_short_sl[1]) == -1 and not Final_Short_tp
+last_long_sl            := Final_Long_sl ? time : nz(last_long_sl[1])
+last_short_sl           := Final_Short_sl ? time : nz(last_short_sl[1])
+Final_Long_sl           := Final_Long_sl0 and last_longCondition > nz(last_long_tp[1]) and last_longCondition > nz(last_long_sl[1])
+Final_Short_sl          := Final_Short_sl0 and last_shortCondition > nz(last_short_tp[1]) and last_shortCondition > nz(last_short_sl[1])
+CondIni_long_sl         := Final_Long_tp or Final_Long_sl or  Final_shortCondition  ? 1 : Final_longCondition ? -1 : nz(CondIni_long_sl[1])
+CondIni_short_sl        := Final_Short_tp or Final_Short_sl  or Final_longCondition  ? 1 : Final_shortCondition ? -1 : nz(CondIni_short_sl[1])
+
+// Leverage ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+var float   last_leverage_L  = na,   var float   last_leverage_S = na
+
+Act_Lev                 =           input(true,                                title="Activate leverage?"                                                                                                                  )
+Max_Lev                 =           input(3,                                    title="Max lev.",                                                               type    = input.integer,   minval = 1,     maxval = 5       )
+sma_length_lev          =           input(50,                                   title="Volume lenght lev.",                                                     minval  = 1                                                 )
+
+long = ((longCond and not in_longCondition) or (longCond and Final_Long_tp2) or (longCond and Final_Long_sl)) or (longCond and not longCondition and (last_long_tp2 > nz(last_longCondition))) or (longCond and not longCondition and (last_long_sl > nz(last_longCondition))) 
+Long      = (longCond and not in_longCondition) or (longCond and Final_Long_tp2) or (longCond and Final_Long_sl) or (longCond and not longCondition and (last_long_tp2 >= nz(last_longCondition))) or (longCond and not longCondition and (last_long_sl >= nz(last_longCondition)))
+short = ((shortCond and not in_shortCondition) or (shortCond and Final_Short_tp2) or (shortCond and Final_Short_sl)) or (shortCond and not shortCondition and (last_short_tp2 > nz(last_shortCondition))) or (shortCond and not shortCondition and (last_short_sl > nz(last_shortCondition))) 
+Short     = (shortCond and not in_shortCondition) or (shortCond and Final_Short_tp) or (shortCond and Final_Short_sl) or (shortCond and not shortCondition and (last_short_tp >= nz(last_shortCondition))) or (shortCond and not shortCondition and (last_short_sl >= nz(last_shortCondition)))
+
+Lev_vol                 =                               Act_Lev  ?              min(Max_Lev,max(1, round(volume/sma(volume,sma_length_lev)))) : 1
+rsiLen                  =                                                       14
+last_leverage_L     :=                                  Long        ?       Lev_vol             :                           nz(last_leverage_L[1]       )
+last_leverage_S     :=                                  Short       ?       Lev_vol             :                           nz(last_leverage_S[1]       )
+
+vol_x1                  =   Lev_vol[1]  ==  1                                                                             
+vol_x2                  =   Lev_vol[1]  ==  2
+vol_x3                  =   Lev_vol[1]  ==  3
+
+Long_x1     = longCondition     and     vol_x1 
+Short_x1    = shortCondition    and     vol_x1 
+
+Long_x2     = longCondition     and     vol_x2  
+Short_x2    = shortCondition    and     vol_x2
+
+Long_x3     = longCondition     and     vol_x3 
+Short_x3    = shortCondition    and     vol_x3
+
+ATR_L_STOP = ssignal and in_longCondition
+ATR_S_STOP = bsignal and in_shortCondition
+
+
+//RE-ENTRY ON TP-HIT-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+var float sum_long              =                                                           0.0,                                                                    var float sum_short = 0.0
+var float Position_Price        =                                                           0.0
+
+if Final_Long_tp2 or Final_Long_sl  
+    CondIni_long                :=                                                          -1
+    sum_long                    :=                                                          0.0
+    nLongs                      :=                                                          na
+if Final_Short_tp2 or Final_Short_sl 
+    CondIni_short               :=                                                          1
+    sum_short                   :=                                                          0.0
+    nShorts                     :=                                                          na
+   
+// Colors ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ADX_COLOR           =   L_adx ? color.lime : S_adx ? color.red :  color.orange
+BAR_COLOR           =   L_cross ? #1b5e20 :S_cross ? color.maroon : L_adx  ? color.lime : S_adx ? color.red :  color.orange
+barcolor                                                                        (color = BAR_COLOR)
+
+//PLOTS==============================================================================================================================================================================================================================================================================================================
+
+hbandplot   =   plot(hband,                                 title = "RF HT",                                                                                                            color=ADX_COLOR,                                                                                    transp = 50             )
+lbandplot   =   plot(lband,                                 title = "RF LT",                                                                                                            color=ADX_COLOR,                                                                                    transp = 50             )
+fill(hbandplot, lbandplot,                                  title = "RF TR",                                                                                                            color=ADX_COLOR                                                                                                             )
+plot                                                        (l_1_h,                         style = plot.style_circles,             linewidth=5,                                        color=color.fuchsia,                                                                                editable = false        )
+plot                                                        (s_1_h,                         style = plot.style_circles,             linewidth=5,                                        color=color.fuchsia,                                                                                editable = false        )
+plot                                                        (l_2_h,                         style = plot.style_circles,             linewidth=5,                                        color=color.fuchsia,                                                                                editable = false        )
+plot                                                        (s_2_h,                         style = plot.style_circles,             linewidth=5,                                        color=color.fuchsia,                                                                                editable = false        )
+plot(SAR,                                                   title = "SAR",                  style=plot.style_circles,                                                                   color=ADX_COLOR ) 
+
+// PLOTSPAHES ======================================================================================================================================================================================================================================================================================================
+
+plotshape(Final_Long_tp2  or  Final_Long_tp ,                 title="Long TP HIT",            style=shape.flag,                       location=location.abovebar,                         color=color.red,            size=size.small ,          textcolor=color.red,             transp = 0                          ) 
+plotshape(Final_Short_tp2  or  Final_Short_tp ,               title="Short TP HIT",           style=shape.flag,                       location=location.belowbar,                         color=color.green,          size=size.small ,          textcolor=color.green,           transp = 0                          ) 
+
+plotshape(Long_x1,                                          title = "L x1",                 style=shape.triangleup,                 location=location.belowbar,                         color=color.blue,         size=size.tiny ,        text="x1",          textcolor=color.blue,           transp = 0            )
+plotshape(Short_x1,                                         title = "S x1",                 style=shape.triangledown,               location=location.abovebar,                         color=color.red,          size=size.tiny ,        text="x1",          textcolor=color.red,            transp = 0            )
+
+plotshape(Long_x2,                                          title = "L x2",                 style=shape.triangleup,                 location=location.belowbar,                         color=color.blue,         size=size.tiny ,        text="x2",          textcolor=color.blue,           transp = 0            )
+plotshape(Short_x2,                                         title = "S x2",                 style=shape.triangledown,               location=location.abovebar,                         color=color.red,          size=size.tiny,         text="x2",          textcolor=color.red,            transp = 0            )
+
+plotshape(Long_x3,                                          title = "L x3",                 style=shape.triangleup,                 location=location.belowbar,                         color=color.blue,         size=size.tiny ,        text="x3",          textcolor=color.blue,           transp = 0            )
+plotshape(Short_x3,                                         title = "S x3",                 style=shape.triangledown,               location=location.abovebar,                         color=color.red,          size=size.tiny,         text="x3",          textcolor=color.red,            transp = 0            )
+
+plotshape(ATR_L_STOP,                                          title = "ATR LONG CLOSE",                 style=shape.triangledown,                     location=location.abovebar,                         color=color.gray,         size=size.tiny ,        text="ATR L CLOSE",          textcolor=color.gray,           transp = 0            )
+plotshape(ATR_S_STOP,                                         title = "ATR SHORT CLOSE",                 style=shape.triangleup,                     location=location.belowbar,                         color=color.gray,          size=size.tiny,         text="ATR S CLOSE",         textcolor=color.gray,           transp = 0            )
+
+// ALERTS -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//BACKTESTING--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//BACKTESTING inputs --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ACT_BT              =                   input(true,                             title="Backtest",                                           type = input.bool,                                                              group= "BACKTEST")
+long_               =                   input(true,                             title="Longs",                                                                                                                              group= "BACKTEST")
+short_              =                   input(true,                             title="Shorts",                                                                                                                             group= "BACKTEST")
+risk                =                   input(100,                                                                                                                                                                          group= "BACKTEST")
+testStartYear       =                   input(2022,                             title="start year",                                         minval = 1990, maxval = 3000,                                                   group= "BACKTEST") 
+testStartMonth      =                   input(06,                               title="start month",                                        minval = 1, maxval = 12,                                                        group= "BACKTEST")
+testStartDay        =                   input(01,                               title="start day",                                          minval = 1, maxval = 31,                                                        group= "BACKTEST")
+testPeriodStart     =                   timestamp(testStartYear,testStartMonth,testStartDay,0,0)
+testStopYear        =                   input(3333,                             title="stop year",                                          minval=1980, maxval = 2222,                                                     group= "BACKTEST")
+testStopMonth       =                   input(12,                               title="stop month",                                         minval=1, maxval=12,                                                            group= "BACKTEST")
+testStopDay         =                   input(31,                               title="stop day",                                           minval=1, maxval=31,                                                            group= "BACKTEST")
+testPeriodStop      =                   timestamp(testStopYear, testStopMonth, testStopDay, 0, 0)
+testPeriod          =                   time >= testPeriodStart and time <= testPeriodStop ? true : false
+
+//BACKTESTING--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sl := 6.1
+
+
+//if long and ACT_BT
+    //strategy.entry("L_1", strategy.long,when = testPeriod)
+    //strategy.entry("L_2", strategy.long,when = testPeriod)
+
+if short and ACT_BT
+    //strategy.entry("S_1", strategy.short,when = testPeriod)
+    strategy.entry("S_2", strategy.short,when = testPeriod)
+
+
+//strategy.exit("TP-1_L", "L_1", profit = (abs((last_open_longCondition   *       (1+(tp/100)))-last_open_longCondition)/syminfo.mintick),    loss = (abs((last_open_longCondition    *   (1-(sl/100)))-last_open_longCondition)/syminfo.mintick  ))
+strategy.exit("TP-2_S", "S_2", profit = (abs((last_open_shortCondition  *       (1-(tp2/100)))-last_open_shortCondition)/syminfo.mintick),  loss = (abs((last_open_shortCondition   *   (1+(sl/100)))-last_open_shortCondition)/syminfo.mintick ))
+//strategy.exit("TP-1_S", "S_1", profit = (abs((last_open_shortCondition  *       (1-(tp/100)))-last_open_shortCondition)/syminfo.mintick),   loss = (abs((last_open_shortCondition   *   (1+(sl/100)))-last_open_shortCondition)/syminfo.mintick ))
+//strategy.exit("TP-2_L", "L_2", profit = (abs((last_open_longCondition   *       (1+(tp2/100)))-last_open_longCondition)/syminfo.mintick),   loss = (abs((last_open_longCondition    *   (1-(sl/100)))-last_open_longCondition)/syminfo.mintick  ))
+
+
+strategy.close_all(ATR_L_STOP or ATR_S_STOP)
+strategy.close_all(ATR_S_STOP)
+
+//By wielkieef
+
+// 訊號
+
+if long
+    alert('做多', alert.freq_once_per_bar)
+    
+if short
+    alert('做空', alert.freq_once_per_bar)
+    
+
+
+TakeProfit_Price_Long1   = last_open_longCondition*  (1+(tp/100))
+TakeProfit_Price_Long2  = last_open_longCondition*  (1+(tp2/100))
+
+TakeProfit_Price_Short1 = last_open_shortCondition* (1-(tp/100))
+TakeProfit_Price_Short2 = last_open_shortCondition* (1-(tp2/100))
+
+StopLoss_Price_Long     = last_open_longCondition*  (1-(sl/100))
+StopLoss_Price_Short    = last_open_shortCondition* (1+(sl/100))
+
+if close > TakeProfit_Price_Long1
+    alert('做多平倉 50%', alert.freq_once_per_bar)
+
+if close > TakeProfit_Price_Long2
+    alert('做多平倉 100%', alert.freq_once_per_bar)
+    
+if close < TakeProfit_Price_Short1
+    alert('做空平倉 50%', alert.freq_once_per_bar)
+
+if close > TakeProfit_Price_Short2
+    alert('做空平倉 100%', alert.freq_once_per_bar)
+
+if close < StopLoss_Price_Long or ATR_L_STOP or ATR_S_STOP
+    alert('做多止損 100%', alert.freq_once_per_bar)
+
+if close > StopLoss_Price_Short or ATR_S_STOP
+    alert('做空止損 100%', alert.freq_once_per_bar)
