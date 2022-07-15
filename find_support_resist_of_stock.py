@@ -8,7 +8,7 @@ import mplfinance as mpf
 
 yf.pdr_override() # activate yahoo finance workaround
 
-timeD = dt.timedelta(days = 60) #線的長度
+timeD = dt.timedelta(days = 90) #線的長度
 now = dt.datetime.now()
 start = now - timeD
 

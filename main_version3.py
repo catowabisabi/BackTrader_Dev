@@ -2,7 +2,7 @@ import backtrader as bt
 import datetime
 import yfinance as yf
 from stock_config import * 
-from strategies import StochRSIStrategy
+from strategies import V2_Strategy
 import pandas as pd
 
 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     cerebro.adddata(feed)
 
     #============加載策略 (請使用 strategies 文件夾內的 Template)==========
-    cerebro.addstrategy(StochRSIStrategy.StochRSIStrategy)
+    cerebro.addstrategy(V2_Strategy.V2_Strategy)
 
     #============加載佣金, 下注金額, 分析器================================
     cerebro.broker.setcommission(commission=my_broker_commission) #stock_config 佣金

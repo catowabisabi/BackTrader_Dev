@@ -51,6 +51,7 @@ class TrendBand_Strategy(bt.Strategy):
 
         # 設置賣出訊號
         self.sell_sig=self.data.close>self.top
+        
 
     def next(self):
         pass
