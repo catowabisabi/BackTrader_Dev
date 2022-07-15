@@ -4,8 +4,15 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import time
 
+import os.path
+import sys
+
+modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+datapath = os.path.join(modpath, 'data_csv/crypto_price_csv/Bitstamp_BTCUSD_d.csv')
+print (datapath)
+
 #pd.set_option('display.float_format', lambda x: '%.8f' % x)
-df = pd.read_csv("./stock_data/Bitstamp_BTCUSD_d.csv", header = [1])
+df = pd.read_csv(datapath, header = [1])
 df = df[["unix", "open", "high", "low", "close", "Volume USD"]]
 df["volume"] = df["Volume USD"]
 del df["Volume USD"]
