@@ -21,9 +21,9 @@ class TestStrategy(bt.Strategy):
         # To keep track of pending orders and buy price/commission
         # 呢度之後會變, 但由於會用到呢D參數, 所以一開始都要初始化左先
         # 如果你既策略有唔同既參數要用, 記得要加返係度
-        self.order = None
-        self.buyprice = None
-        self.buycomm = None
+        #self.order = None
+        #self.buyprice = None
+        #self.buycomm = None
 
 #=====================策略初始化 完結==================================
 
