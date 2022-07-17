@@ -21,6 +21,8 @@ class RMI(bt.Indicator):
         self.l.rmi_long = bt.ind.CrossOver(rmi, 70)
         self.l.rmi_short = bt.ind.CrossDown(rmi, 30)
 
+        
+
 
 
 

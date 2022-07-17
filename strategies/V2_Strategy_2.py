@@ -14,3 +14,4 @@ class V2_Strategy(bt.Strategy):
             self.buy(size=1)
         elif short_sig:
             self.close()
+        
